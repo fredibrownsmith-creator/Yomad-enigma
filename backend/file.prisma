@@ -1,0 +1,103 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String       @id @default(uuid())
+  name             String
+  email            String       @unique
+  password         String
+  avatar           String?
+  bio              String?
+  languages        String[]
+  location         String?
+  country          String?
+  lat              Float?
+  lng              Float?
+  yearsExperience  Int?
+  yogaStyles       String[]
+  certifications   String[]
+  isVerified       Boolean      @default(false)
+  sentMessages     Message[]    @relation("SentMessages")
+  receivedMessages Message[]    @relation("ReceivedMessages")
+  ownedVenues      Venue[]
+  reviews          Review[]
+  connections      Connection[] @relation("UserConnections")
+  connectedBy      Connection[] @relation("ConnectedByUsers")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Venue {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  address      String
+  city         String
+  country      String
+  lat          Float?
+  lng          Float?
+  capacity     Int?
+  pricePerHour Float?
+  equipment    String[]
+  amenities    String[]
+  photos       String[]
+  isVerified   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  ownerId      String
+  owner        User     @relation(fields: [ownerId], references: [id])
+  reviews      Review[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  userId    String
+  venueId   String
+  user      User     @relation(fields: [userId], references: [id])
+  venue     Venue    @relation(fields: [venueId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  senderId   String
+  receiverId String
+  read       Boolean  @default(false)
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model Connection {
+  id          String   @id @default(uuid())
+  userId      String
+  connectedId String
+  status      String   @default("pending")
+  user        User     @relation("UserConnections", fields: [userId], references: [id])
+  connected   User     @relation("ConnectedByUsers", fields: [connectedId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Offer {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  code        String?
+  discount    String?
+  partner     String
+  category    String
+  imageUrl    String?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}

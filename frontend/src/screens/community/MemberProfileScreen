@@ -1,0 +1,82 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
+import { getMember, sendConnection } from '../../api/community';
+import { useAuth } from '../../context/AuthContext';
+
+export default function MemberProfileScreen({ route, navigation }) {
+  const { id } = route.params;
+  const { token } = useAuth();
+  const [member, setMember]       = useState(null);
+  const [loading, setLoading]     = useState(true);
+  const [connecting, setConn]     = useState(false);
+
+  useEffect(() => { load(); }, []);
+
+  const load = async () => {
+    try   { setMember(await getMember(id, token)); }
+    catch (err) { Alert.alert('Error', err.message); }
+    finally { setLoading(false); }
+  };
+
+  const connect = async () => {
+    setConn(true);
+    try   { await sendConnection(id, token); Alert.alert('Sent!', `Connection request sent to ${member.name}`); }
+    catch (err) { Alert.alert('Error', err.message); }
+    finally { setConn(false); }
+  };
+
+  if (loading) return <View style={s.center}><ActivityIndicator size="large" color="#6B4EFF" /></View>;
+  if (!member) return <View style={s.center}><Text>Member not found</Text></View>;
+
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <ScrollView style={s.page}>
+        <View style={s.hero}>
+          <View style={s.avatar}><Text style={s.avatarTxt}>{member.name.charAt(0)}</Text></View>
+          <Text style={s.name}>{member.name}</Text>
+          {member.isVerified   && <Text style={s.verified}>✓ Verified Teacher</Text>}
+          {member.location     && <Text style={s.loc}>📍 {member.location}, {member.country}</Text>}
+          {member.yearsExperience > 0 && <Text style={s.exp}>{member.yearsExperience} years teaching</Text>}
+        </View>
+
+        {member.bio && (
+          <View style={s.card}><Text style={s.cardTitle}>About</Text><Text style={s.body}>{member.bio}</Text></View>
+        )}
+
+        {member.yogaStyles?.length > 0 && (
+          <View style={s.card}>
+            <Text style={s.cardTitle}>Yoga Styles</Text>
+            <View style={s.tags}>{member.yogaStyles.map(i => <View key={i} style={s.tag}><Text style={s.tagTxt}>{i}</Text></View>)}</View>
+          </View>
+        )}
+
+        {member.languages?.length > 0 && (
+          <View style={s.card}>
+            <Text style={s.cardTitle}>Languages</Text>
+            <View style={s.tags}>{member.languages.map(i => <View key={i} style={[s.tag, s.langTag]}><Text style={s.langTxt}>🌐 {i}</Text></View>)}</View>
+          </View>
+        )}
+
+        {member.certifications?.length > 0 && (
+          <View style={s.card}>
+            <Text style={s.cardTitle}>Certifications</Text>
+            {member.certifications.map(c => <Text key={c} style={s.cert}>🎓 {c}</Text>)}
+          </View>
+        )}
+
+        <View style={s.row}>
+          <TouchableOpacity style={s.connectBtn} onPress={connect} disabled={connecting}>
+            <Text style={s.connectTxt}>{connecting ? 'Sending...' : '🤝 Connect'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.msgBtn} onPress={() => navigation.navigate('Chat', { userId: member.id, userName: member.name })}>
+            <Text style={s.msgTxt}>💬 Message</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  page:       { flex: 1, backgroundColor: '#F8F9FA' },
+  center:     { flex: 1, justifyContent: 'center', alignItems:
